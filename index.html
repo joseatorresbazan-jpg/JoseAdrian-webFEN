@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plan Integral FEN 2026 | Dashboard Ejecutivo</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{
+      --navy:#07182C;
+      --navy-2:#0B2C4D;
+      --primary:#0A2342;
+      --primary-2:#103A62;
+      --ink:#132238;
+      --muted:#66758A;
+      --bg:#F3F6FA;
+      --card:#FFFFFF;
+      --soft:#F8FAFC;
+      --border:#DFE6EF;
+      --action:#2563EB;
+      --green:#16A34A;
+      --red:#DC2626;
+      --orange:#F97316;
+      --purple:#8B5CF6;
+      --cyan:#06B6D4;
+      --todo:#D9DDE3;
+      --discovery:#9CA3AF;
+      --ready:#FBBF24;
+      --implementing:#2F9BE8;
+      --measuring:#159A9C;
+      --done:#55B83B;
+      --deprioritized:#EF4444;
+      --fallback:#94A3B8;
+      --shadow:0 12px 36px rgba(16,35,62,.08);
+      --shadow-sm:0 6px 20px rgba(16,35,62,.06);
+      --radius:18px;
+      --sidebar-width:280px;
+      --sidebar-collapsed:84px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+      background:var(--bg);
+      color:var(--ink);
+    }
+
+    .layout{min-height:100vh;display:flex}
+
+    .sidebar{
+      width:var(--sidebar-width);
+      background:linear-gradient(180deg,var(--navy),var(--navy-2));
+      color:#fff;
+      position:fixed;
+      inset:0 auto 0 0;
+      z-index:40;
+      display:flex;
+      flex-direction:column;
+      transition:width .25s ease, transform .25s ease;
+      border-right:1px solid rgba(255,255,255,.08);
+    }
+
+    body.sidebar-collapsed .sidebar{width:var(--sidebar-collapsed)}
+
+    .brand{
+      padding:24px 22px 18px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex;
+      align-items:center;
+      gap:14px;
+      min-height:92px;
+    }
+
+    .brand-mark{
+      width:42px;height:42px;border-radius:14px;
+      display:grid;place-items:center;
+      background:rgba(255,255,255,.09);
+      border:1px solid rgba(255,255,255,.14);
+      font-weight:800;
+      letter-spacing:.5px;
+      flex:none;
+    }
+
+    .brand-text{min-width:0;transition:opacity .2s ease}
+    .brand-text strong{display:block;font-size:15px;line-height:1.15}
+    .brand-text span{display:block;margin-top:4px;font-size:12px;color:rgba(255,255,255,.66)}
+    body.sidebar-collapsed .brand-text,
+    body.sidebar-collapsed .nav-text,
+    body.sidebar-collapsed .sidebar-footer{opacity:0;pointer-events:none;width:0;overflow:hidden}
+
+    .sidebar-toggle{
+      position:absolute;
+      right:-17px;top:28px;
+      width:34px;height:34px;border-radius:50%;
+      border:1px solid var(--border);
+      background:#fff;
+      color:var(--primary);
+      cursor:pointer;
+      box-shadow:var(--shadow-sm);
+      display:grid;place-items:center;
+      font-size:17px;
+      z-index:50;
+    }
+
+    .nav{
+      padding:20px 14px;
+      display:grid;
+      gap:8px;
+    }
+
+    .nav-button{
+      width:100%;
+      border:0;
+      background:transparent;
+      color:rgba(255,255,255,.78);
+      cursor:pointer;
+      border-radius:14px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:13px 14px;
+      font-size:14px;
+      font-weight:650;
+      text-align:left;
+      transition:background .2s ease,color .2s ease;
+    }
+
+    .nav-button:hover{background:rgba(255,255,255,.08);color:#fff}
+    .nav-button.active{background:#fff;color:var(--primary);box-shadow:0 10px 26px rgba(0,0,0,.10)}
+    .nav-icon{width:26px;height:26px;display:grid;place-items:center;flex:none;font-size:17px}
+
+    .sidebar-footer{
+      margin-top:auto;
+      padding:18px 22px 24px;
+      color:rgba(255,255,255,.62);
+      font-size:12px;
+      line-height:1.45;
+      border-top:1px solid rgba(255,255,255,.08);
+      transition:opacity .2s ease;
+    }
+
+    .main{
+      flex:1;
+      margin-left:var(--sidebar-width);
+      min-width:0;
+      transition:margin-left .25s ease;
+    }
+
+    body.sidebar-collapsed .main{margin-left:var(--sidebar-collapsed)}
+
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:30;
+      background:rgba(243,246,250,.86);
+      backdrop-filter:blur(16px);
+      border-bottom:1px solid rgba(223,230,239,.8);
+      padding:18px 30px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:20px;
+    }
+
+    .mobile-menu-btn{
+      display:none;
+      width:42px;height:42px;border-radius:12px;
+      border:1px solid var(--border);
+      background:#fff;
+      color:var(--primary);
+      cursor:pointer;
+      font-size:20px;
+    }
+
+    .page-title h1{margin:0;font-size:22px;letter-spacing:-.02em;color:var(--ink)}
+    .page-title p{margin:5px 0 0;color:var(--muted);font-size:13px}
+
+    .top-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+    .data-pill{
+      border:1px solid var(--border);
+      background:#fff;
+      border-radius:999px;
+      padding:9px 13px;
+      color:var(--muted);
+      font-size:12px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      box-shadow:0 3px 12px rgba(16,35,62,.04);
+      white-space:nowrap;
+    }
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(22,163,74,.1)}
+
+    .content{padding:28px 30px 42px;max-width:1600px;margin:0 auto}
+    .view{display:none}
+    .view.active{display:block}
+
+    .hero{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:24px;
+      box-shadow:var(--shadow);
+      padding:30px;
+      display:grid;
+      grid-template-columns:1.3fr .7fr;
+      gap:24px;
+      margin-bottom:24px;
+      overflow:hidden;
+      position:relative;
+    }
+    .hero:after{
+      content:"";
+      position:absolute;
+      width:360px;height:360px;
+      border-radius:50%;
+      right:-150px;top:-200px;
+      background:radial-gradient(circle,rgba(37,99,235,.12),rgba(37,99,235,0) 65%);
+      pointer-events:none;
+    }
+    .eyebrow{
+      color:var(--action);
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      font-size:12px;
+      margin-bottom:10px;
+    }
+    .hero h2{font-size:34px;line-height:1.08;margin:0 0 12px;color:var(--ink);letter-spacing:-.04em}
+    .hero p{margin:0;color:var(--muted);line-height:1.65;font-size:15px;max-width:760px}
+    .hero-side{
+      align-self:stretch;
+      border:1px solid var(--border);
+      background:var(--soft);
+      border-radius:20px;
+      padding:20px;
+      display:grid;
+      align-content:center;
+      gap:14px;
+    }
+    .hero-metric{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+    .hero-metric:last-child{border-bottom:0}
+    .hero-metric span{color:var(--muted);font-size:13px}
+    .hero-metric strong{color:var(--ink);font-size:20px}
+
+    .section-title{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
+      margin:28px 0 14px;
+    }
+    .section-title h2{margin:0;font-size:20px;letter-spacing:-.02em;color:var(--ink)}
+    .section-title p{margin:4px 0 0;color:var(--muted);font-size:13px}
+
+    .objectives-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:18px;
+      margin-bottom:24px;
+    }
+    .objective-card,.card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .objective-card{padding:22px}
+    .objective-number{
+      width:38px;height:38px;border-radius:12px;
+      display:grid;place-items:center;
+      background:#EEF4FF;
+      color:var(--action);
+      font-weight:850;
+      margin-bottom:16px;
+    }
+    .objective-card h3{margin:0 0 8px;color:var(--ink);font-size:16px}
+    .objective-card p{margin:0;color:var(--muted);line-height:1.6;font-size:14px}
+
+    .commission-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:16px;
+    }
+    .commission-card{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:18px;
+      box-shadow:0 8px 24px rgba(16,35,62,.055);
+      transition:transform .2s ease,box-shadow .2s ease;
+    }
+    .commission-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+    .commission-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .commission-id{
+      width:42px;height:34px;border-radius:10px;
+      display:grid;place-items:center;
+      background:var(--soft);
+      border:1px solid var(--border);
+      color:var(--primary);
+      font-weight:850;
+      font-size:13px;
+      flex:none;
+    }
+    .commission-card h3{margin:0;color:var(--ink);font-size:15px;line-height:1.35}
+    .commission-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+    .backlog-link{
+      margin-top:14px;
+      width:100%;
+      border:1px solid var(--border);
+      background:#fff;
+      color:var(--primary);
+      border-radius:12px;
+      padding:10px 12px;
+      cursor:pointer;
+      font-weight:750;
+      transition:background .2s ease,border-color .2s ease;
+    }
+    .backlog-link:hover{background:var(--soft);border-color:#C8D5E7}
+
+    .status-message{
+      display:none;
+      margin-bottom:18px;
+      background:#FFF7ED;
+      color:#9A3412;
+      border:1px solid #FED7AA;
+      border-radius:14px;
+      padding:13px 15px;
+      font-size:14px;
+    }
+
+    .filters-card{
+      background:#fff;
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      border-radius:20px;
+      padding:18px;
+      margin-bottom:18px;
+    }
+    .filters{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(140px,1fr));
+      gap:14px;
+    }
+    .field label{
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      font-weight:750;
+      margin-bottom:7px;
+    }
+    .field select,.field input{
+      width:100%;
+      height:42px;
+      border:1px solid var(--border);
+      background:var(--soft);
+      border-radius:12px;
+      padding:0 12px;
+      outline:none;
+      color:var(--ink);
+      font-size:13px;
+    }
+    .field select:focus,.field input:focus{border-color:#AFC4E7;box-shadow:0 0 0 4px rgba(37,99,235,.08)}
+
+    .kpis{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:16px;
+      margin-bottom:18px;
+    }
+    .kpi{
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:18px;
+      min-height:132px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+    .kpi-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .kpi h3{margin:0;color:var(--muted);font-size:13px;font-weight:750}
+    .kpi-icon{
+      width:34px;height:34px;border-radius:12px;
+      display:grid;place-items:center;
+      background:var(--soft);
+      color:var(--primary);
+      border:1px solid var(--border);
+      font-size:15px;
+    }
+    .kpi-value{font-size:38px;line-height:1;font-weight:850;letter-spacing:-.04em;color:var(--ink);margin-top:20px}
+    .kpi small{margin-top:8px;color:var(--muted);font-size:12px}
+    .kpi.positive .kpi-value{color:var(--green)}
+    .kpi.warning .kpi-value{color:var(--orange)}
+    .kpi.danger .kpi-value{color:var(--red)}
+    .kpi.action .kpi-value{color:var(--action)}
+
+    .dashboard-grid{
+      display:grid;
+      grid-template-columns:1.05fr .95fr;
+      gap:18px;
+      align-items:start;
+    }
+    .card{padding:20px}
+    .card-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:14px;
+      margin-bottom:14px;
+    }
+    .card h3{margin:0;color:var(--ink);font-size:16px;letter-spacing:-.01em}
+    .card .hint{margin:4px 0 0;color:var(--muted);font-size:12px}
+    .chart-wrap{height:320px;position:relative}
+    .chart-wrap.tall{height:430px}
+    .chart-wrap.compact{height:260px}
+
+    .date-strip{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+      margin:8px 0 18px;
+    }
+    .date-box{
+      background:var(--soft);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:14px;
+    }
+    .date-box span{display:block;color:var(--muted);font-size:12px;font-weight:750}
+    .date-box strong{display:block;margin-top:6px;font-size:28px;color:var(--ink);letter-spacing:-.03em}
+    .date-box small{color:var(--muted)}
+    .progressbar{
+      height:12px;
+      background:#E9EEF5;
+      border-radius:999px;
+      overflow:hidden;
+      display:flex;
+    }
+    .bar-ok{background:var(--green)}
+    .bar-soon{background:var(--orange)}
+    .bar-expired{background:var(--red)}
+
+    .attention-card{margin-top:18px}
+    .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:16px}
+    table{width:100%;border-collapse:collapse;background:#fff;font-size:13px;min-width:850px}
+    th{
+      background:var(--soft);
+      color:var(--primary);
+      text-align:left;
+      padding:13px 14px;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      border-bottom:1px solid var(--border);
+      white-space:nowrap;
+    }
+    td{
+      padding:14px;
+      border-bottom:1px solid var(--border);
+      color:var(--ink);
+      vertical-align:middle;
+    }
+    tr:last-child td{border-bottom:0}
+    .muted{color:var(--muted)}
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:96px;
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:800;
+      font-size:11px;
+      color:#10233E;
+      border:1px solid rgba(19,34,56,.08);
+      white-space:nowrap;
+    }
+    .alert-text{font-weight:850;white-space:nowrap}
+    .alert-red{color:var(--red)}
+    .alert-orange{color:var(--orange)}
+    .empty{padding:26px;text-align:center;color:var(--muted)}
+
+    .overlay{display:none}
+
+    @media (max-width:1280px){
+      .filters{grid-template-columns:repeat(3,1fr)}
+      .kpis{grid-template-columns:repeat(3,1fr)}
+      .commission-grid{grid-template-columns:repeat(2,1fr)}
+      .hero{grid-template-columns:1fr}
+    }
+
+    @media (max-width:980px){
+      .sidebar{transform:translateX(-100%);width:286px}
+      body.mobile-sidebar-open .sidebar{transform:translateX(0)}
+      body.sidebar-collapsed .sidebar{width:286px}
+      .main,body.sidebar-collapsed .main{margin-left:0}
+      .mobile-menu-btn{display:grid;place-items:center}
+      .sidebar-toggle{display:none}
+      .overlay{
+        display:block;
+        position:fixed;
+        inset:0;
+        background:rgba(7,24,44,.42);
+        z-index:35;
+        opacity:0;
+        pointer-events:none;
+        transition:opacity .2s ease;
+      }
+      body.mobile-sidebar-open .overlay{opacity:1;pointer-events:auto}
+      .topbar{padding:14px 18px}
+      .content{padding:20px 18px 34px}
+      .dashboard-grid{grid-template-columns:1fr}
+      .objectives-grid{grid-template-columns:1fr}
+    }
+
+    @media (max-width:720px){
+      .topbar{align-items:flex-start}
+      .page-title h1{font-size:18px}
+      .top-actions{display:none}
+      .hero{padding:22px;border-radius:20px}
+      .hero h2{font-size:27px}
+      .filters{grid-template-columns:1fr}
+      .kpis{grid-template-columns:1fr}
+      .commission-grid{grid-template-columns:1fr}
+      .date-strip{grid-template-columns:1fr}
+      .chart-wrap,.chart-wrap.tall,.chart-wrap.compact{height:285px}
+      .card{padding:16px}
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay" onclick="closeMobileMenu()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Ocultar o mostrar menú">‹</button>
+
+    <div class="brand">
+      <div class="brand-mark">FEN</div>
+      <div class="brand-text">
+        <strong>Plan Integral FEN</strong>
+        <span>Panel ejecutivo 2026</span>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="Navegación principal">
+      <button class="nav-button active" data-view="plan" onclick="showView('plan')">
+        <span class="nav-icon">◻</span>
+        <span class="nav-text">Plan integral FEN</span>
+      </button>
+
+      <button class="nav-button" data-view="dashboard" onclick="showView('dashboard')">
+        <span class="nav-icon">⌁</span>
+        <span class="nav-text">Dashboard ejecución</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      Información conectada a Google Sheets publicado como CSV. Si el archivo contiene datos sensibles, debe considerarse una fuente pública.
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+        <button class="mobile-menu-btn" onclick="openMobileMenu()" aria-label="Abrir menú">☰</button>
+        <div class="page-title">
+          <h1 id="pageTitle">Plan integral FEN</h1>
+          <p id="pageSubtitle">Resumen corporativo del plan, objetivos y comisiones.</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <div class="data-pill"><span class="dot"></span> Fuente activa</div>
+        <div class="data-pill">Actualizado: <strong id="lastUpdate">--/--/----</strong></div>
+      </div>
+    </header>
+
+    <section class="content">
+      <div id="statusMessage" class="status-message"></div>
+
+      <section id="view-plan" class="view active">
+        <div class="hero">
+          <div>
+            <div class="eyebrow">Plan de acción integral</div>
+            <h2>Gestión ejecutiva FEN 2026</h2>
+            <p>
+              Seguimiento integral de iniciativas orientadas al cuidado de las personas, la continuidad operacional
+              y la coordinación de comisiones responsables. Esta vista resume la estructura del plan y permite acceder
+              rápidamente al backlog de cada comisión.
+            </p>
+          </div>
+
+          <div class="hero-side">
+            <div class="hero-metric">
+              <span>Comisiones activas</span>
+              <strong id="planCommissionsCount">12</strong>
+            </div>
+            <div class="hero-metric">
+              <span>Acciones registradas</span>
+              <strong id="planActionsCount">0</strong>
+            </div>
+            <div class="hero-metric">
+              <span>Avance general</span>
+              <strong><span id="planAdvance">0</span>%</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <div>
+            <h2>Objetivos estratégicos</h2>
+            <p>Marco de referencia del plan integral.</p>
+          </div>
+        </div>
+
+        <div class="objectives-grid">
+          <article class="objective-card">
+            <div class="objective-number">01</div>
+            <h3>Cuidado de la salud e integridad</h3>
+            <p>
+              Garantizar el cuidado de la salud y la integridad de nuestros trabajadores, incidiendo positivamente en sus familias y comunidades.
+            </p>
+          </article>
+
+          <article class="objective-card">
+            <div class="objective-number">02</div>
+            <h3>Continuidad y eficiencia operacional</h3>
+            <p>
+              Asegurar la continuidad y eficiencia operacional mediante una gestión coordinada, oportuna y medible.
+            </p>
+          </article>
+        </div>
+
+        <div class="section-title">
+          <div>
+            <h2>Comisiones del plan</h2>
+            <p>Responsables y acceso directo al backlog por comisión.</p>
+          </div>
+        </div>
+
+        <div class="commission-grid" id="commissionsDirectory"></div>
+      </section>
+
+      <section id="view-dashboard" class="view">
+        <div class="filters-card">
+          <div class="filters">
+            <div class="field">
+              <label for="filterCommission">Comisión</label>
+              <select id="filterCommission"><option value="">Todas</option></select>
+            </div>
+
+            <div class="field">
+              <label for="filterStatus">Estado</label>
+              <select id="filterStatus"><option value="">Todos</option></select>
+            </div>
+
+            <div class="field">
+              <label for="filterResponsible">Responsable</label>
+              <select id="filterResponsible"><option value="">Todos</option></select>
+            </div>
+
+            <div class="field">
+              <label for="filterStart">Fecha de inicio</label>
+              <input type="date" id="filterStart" />
+            </div>
+
+            <div class="field">
+              <label for="filterEnd">Fecha de fin</label>
+              <input type="date" id="filterEnd" />
+            </div>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <article class="kpi">
+            <div class="kpi-top">
+              <h3>Total de acciones</h3>
+              <div class="kpi-icon">∑</div>
+            </div>
+            <div class="kpi-value" id="kpiTotal">0</div>
+            <small>Acciones según filtros aplicados</small>
+          </article>
+
+          <article class="kpi positive">
+            <div class="kpi-top">
+              <h3>Terminadas</h3>
+              <div class="kpi-icon">✓</div>
+            </div>
+            <div class="kpi-value" id="kpiExecuted">0</div>
+            <small>Acciones culminadas</small>
+          </article>
+
+          <article class="kpi action">
+            <div class="kpi-top">
+              <h3>En ejecución</h3>
+              <div class="kpi-icon">↻</div>
+            </div>
+            <div class="kpi-value" id="kpiProgress">0</div>
+            <small>Acciones en curso</small>
+          </article>
+
+          <article class="kpi danger">
+            <div class="kpi-top">
+              <h3>Vencidas</h3>
+              <div class="kpi-icon">!</div>
+            </div>
+            <div class="kpi-value" id="kpiExpired">0</div>
+            <small>Requieren atención</small>
+          </article>
+
+          <article class="kpi warning">
+            <div class="kpi-top">
+              <h3>Decisiones pendientes</h3>
+              <div class="kpi-icon">?</div>
+            </div>
+            <div class="kpi-value" id="pendingDecisions">0</div>
+            <small>Según información registrada</small>
+          </article>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <h3>Distribución por estado</h3>
+                <p class="hint">Composición de acciones por etapa de ejecución.</p>
+              </div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="statusChart"></canvas>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <h3>Cumplimiento de fechas</h3>
+                <p class="hint">Clasificación por vencimiento.</p>
+              </div>
+            </div>
+
+            <div class="date-strip">
+              <div class="date-box">
+                <span>A tiempo</span>
+                <strong id="dateOk">0</strong>
+                <small id="dateOkPct">(0%)</small>
+              </div>
+              <div class="date-box">
+                <span>Próximas a vencer</span>
+                <strong id="dateSoon">0</strong>
+                <small id="dateSoonPct">(0%)</small>
+              </div>
+              <div class="date-box">
+                <span>Vencidas</span>
+                <strong id="dateExpired">0</strong>
+                <small id="dateExpiredPct">(0%)</small>
+              </div>
+            </div>
+
+            <div class="progressbar">
+              <div class="bar-ok" id="barOk" style="width:0%"></div>
+              <div class="bar-soon" id="barSoon" style="width:0%"></div>
+              <div class="bar-expired" id="barExpired" style="width:0%"></div>
+            </div>
+            <p class="hint" style="margin-top:12px;">Total evaluado: <strong id="dateTotal">0</strong></p>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <h3>Acciones por comisión</h3>
+                <p class="hint">Volumen de acciones registradas por frente.</p>
+              </div>
+            </div>
+            <div class="chart-wrap compact">
+              <canvas id="commissionChart"></canvas>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <h3>Avance por comisión</h3>
+                <p class="hint">Porcentaje de avance estimado por comisión.</p>
+              </div>
+            </div>
+            <div class="chart-wrap tall">
+              <canvas id="advanceChart"></canvas>
+            </div>
+          </article>
+        </div>
+
+        <article class="card attention-card">
+          <div class="card-header">
+            <div>
+              <h3>Acciones que requieren atención</h3>
+              <p class="hint">Acciones vencidas o próximas a vencer.</p>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Comisión</th>
+                  <th>Actividad</th>
+                  <th>Estado</th>
+                  <th>Responsable</th>
+                  <th>Fecha de fin</th>
+                  <th>Alerta</th>
+                </tr>
+              </thead>
+              <tbody id="attentionTable"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSkj3T3-1eM9_T_MLmVPc0v5uTAoiCJUPVOoDNCdVePgICBmIbKT9qdzam42cpfTaW5MQ_Dxrvt-yAU/pub?gid=405684898&single=true&output=csv";
+
+    const COMMISSIONS = [
+      { id:"C1", name:"Comisión de salud", leader:"BAZAN CABELLOS JAIME ALEJANDRO" },
+      { id:"C2", name:"Comisión de seguridad", leader:"ROJO PEÑARANDA LINDBERGH JOHAN" },
+      { id:"C3", name:"Comisión de infraestructura y energéticos", leader:"SALAZAR CHECA FERNANDO ENRIQUE" },
+      { id:"C4", name:"Comisión de relacionamiento con autoridades y gremios", leader:"CARRUITERO CRUZ ROGER JAVIER MARTIN" },
+      { id:"C5", name:"Comisión de relacionamiento con comunidades", leader:"TALAVERA PALACIOS ALEXANDRA" },
+      { id:"C6", name:"Comisión de logística y despacho", leader:"CHAVEZ OCAMPO HENRY" },
+      { id:"C7", name:"Comisión de comunicaciones", leader:"ROJAS ALVARADO SANDRA MARTHA" },
+      { id:"C8", name:"Comisión de servicios por impuestos", leader:"VILCHEZ MONGRUT LISSET ANICK" },
+      { id:"C9", name:"Comisión de administración y gestión de personal", leader:"BARRETO LOYOLA ELVIA ARACELLI" },
+      { id:"C10", name:"Comisión de transporte de materia prima", leader:"CCAHUIN SANCHEZ HELEN DESCIREE" },
+      { id:"C11", name:"Comisión de plan de contingencia de procesamiento y saneamiento industrial", leader:"CIPRIANO YUPANQUI EDWIN ALEXANDER" },
+      { id:"C12", name:"Comisión de control de plagas campo", leader:"ARANA CABRERA MANUEL JAVIER" }
+    ];
+
+    const fieldMap = {
+      commission:["COMISIÓN","COMISION","Comisión","Comision","ID","Comisión ID","COMISION ID","Comision ID"],
+      status:["ESTADO","Estado","estado","STATUS","Status"],
+      responsible:["RESPONSABLE","Responsable","responsable","LÍDER","LIDER","Líder","Lider"],
+      activity:["ACTIVIDAD","Actividad","actividad","LISTADO DE ACTIVIDADES","Acción","ACCION","Accion","Tarea","TAREA"],
+      startDate:["FECHA DE INICIO","Fecha de inicio","fecha de inicio","Inicio","INICIO"],
+      endDate:["FECHA DE FIN","Fecha de fin","fecha de fin","Fin","FIN","Vencimiento","Fecha vencimiento"],
+      advance:["AVANCE","Avance","% AVANCE","% Avance","PORCENTAJE","Porcentaje","Progreso","PROGRESO"],
+      decision:["DECISIÓN","DECISION","Decisión","Decision","DECISIONES","Decisiones"]
+    };
+
+    let rawData = [];
+    let filteredData = [];
+    let charts = {};
+    const today = new Date();
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("lastUpdate").textContent = formatDate(new Date());
+      renderCommissionsDirectory();
+      loadData();
+
+      ["filterCommission","filterStatus","filterResponsible","filterStart","filterEnd"].forEach(id => {
+        document.getElementById(id).addEventListener("change", applyFilters);
+      });
+    });
+
+    function toggleSidebar(){
+      document.body.classList.toggle("sidebar-collapsed");
+      const btn = document.querySelector(".sidebar-toggle");
+      btn.textContent = document.body.classList.contains("sidebar-collapsed") ? "›" : "‹";
+    }
+
+    function openMobileMenu(){document.body.classList.add("mobile-sidebar-open")}
+    function closeMobileMenu(){document.body.classList.remove("mobile-sidebar-open")}
+
+    function showView(view){
+      document.querySelectorAll(".view").forEach(el => el.classList.remove("active"));
+      document.getElementById("view-" + view).classList.add("active");
+
+      document.querySelectorAll(".nav-button").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.view === view);
+      });
+
+      const title = document.getElementById("pageTitle");
+      const subtitle = document.getElementById("pageSubtitle");
+
+      if(view === "plan"){
+        title.textContent = "Plan integral FEN";
+        subtitle.textContent = "Resumen corporativo del plan, objetivos y comisiones.";
+      }else{
+        title.textContent = "Dashboard ejecución";
+        subtitle.textContent = "Indicadores, filtros, gráficos y acciones críticas.";
+        setTimeout(updateCharts, 80);
+      }
+
+      closeMobileMenu();
+      window.scrollTo({top:0, behavior:"smooth"});
+    }
+
+    async function loadData(){
+      showStatus("Cargando información desde Google Sheets...");
+      try{
+        const response = await fetch(CSV_URL);
+        if(!response.ok) throw new Error("No se pudo leer el CSV");
+        const csvText = await response.text();
+
+        rawData = parseCSV(csvText).filter(row => Object.values(row).some(value => String(value || "").trim() !== ""));
+        filteredData = [...rawData];
+
+        hideStatus();
+        populateFilters();
+        updateDashboard();
+      }catch(error){
+        console.error(error);
+        showStatus("No se pudo cargar el CSV. Revisa que el Google Sheet esté publicado como CSV y que el enlace sea público.");
+      }
+    }
+
+    function parseCSV(text){
+      const rows = [];
+      let current = "";
+      let row = [];
+      let insideQuotes = false;
+
+      for(let i=0;i<text.length;i++){
+        const char = text[i];
+        const next = text[i+1];
+
+        if(char === '"' && insideQuotes && next === '"'){
+          current += '"';
+          i++;
+        }else if(char === '"'){
+          insideQuotes = !insideQuotes;
+        }else if(char === "," && !insideQuotes){
+          row.push(current);
+          current = "";
+        }else if((char === "\n" || char === "\r") && !insideQuotes){
+          if(char === "\r" && next === "\n") i++;
+          row.push(current);
+          rows.push(row);
+          row = [];
+          current = "";
+        }else{
+          current += char;
+        }
+      }
+
+      if(current || row.length){
+        row.push(current);
+        rows.push(row);
+      }
+
+      if(!rows.length) return [];
+      const headers = rows[0].map(cleanText);
+
+      return rows.slice(1).map(values => {
+        const obj = {};
+        headers.forEach((header,index) => obj[header] = cleanText(values[index] || ""));
+        return obj;
+      });
+    }
+
+    function cleanText(value){return String(value || "").trim()}
+
+    function normalize(value){
+      return String(value || "")
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+        .replace(/\s+/g," ")
+        .trim();
+    }
+
+    function getField(row,type){
+      const possible = fieldMap[type] || [];
+      for(const name of possible){
+        if(Object.prototype.hasOwnProperty.call(row,name)) return row[name];
+      }
+      const normalizedPossible = possible.map(normalize);
+      const key = Object.keys(row).find(k => normalizedPossible.includes(normalize(k)));
+      return key ? row[key] : "";
+    }
+
+    function populateFilters(){
+      fillSelect(document.getElementById("filterCommission"), uniqueValues(rawData,"commission"));
+      fillSelect(document.getElementById("filterStatus"), uniqueValues(rawData,"status"));
+      fillSelect(document.getElementById("filterResponsible"), uniqueValues(rawData,"responsible"));
+    }
+
+    function uniqueValues(data,fieldType){
+      return [...new Set(data.map(row => getField(row,fieldType)).filter(Boolean))]
+        .sort((a,b) => String(a).localeCompare(String(b),"es"));
+    }
+
+    function fillSelect(select,values){
+      const current = select.value;
+      select.innerHTML = '<option value="">Todas</option>';
+      if(select.id !== "filterCommission") select.innerHTML = '<option value="">Todos</option>';
+
+      values.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+      select.value = current;
+    }
+
+    function applyFilters(){
+      const commission = document.getElementById("filterCommission").value;
+      const status = document.getElementById("filterStatus").value;
+      const responsible = document.getElementById("filterResponsible").value;
+      const start = document.getElementById("filterStart").value;
+      const end = document.getElementById("filterEnd").value;
+
+      filteredData = rawData.filter(row => {
+        const rowCommission = getField(row,"commission");
+        const rowStatus = getField(row,"status");
+        const rowResponsible = getField(row,"responsible");
+        const rowStart = parseDate(getField(row,"startDate"));
+        const rowEnd = parseDate(getField(row,"endDate"));
+
+        const matchCommission = !commission || rowCommission === commission;
+        const matchStatus = !status || rowStatus === status;
+        const matchResponsible = !responsible || rowResponsible === responsible;
+
+        let matchStart = true;
+        if(start && rowStart) matchStart = rowStart >= new Date(start + "T00:00:00");
+
+        let matchEnd = true;
+        if(end && rowEnd) matchEnd = rowEnd <= new Date(end + "T23:59:59");
+
+        return matchCommission && matchStatus && matchResponsible && matchStart && matchEnd;
+      });
+
+      updateDashboard();
+    }
+
+    function updateDashboard(){
+      updatePlanSummary();
+      updateKPIs();
+      updateDateCompliance();
+      updateCharts();
+      renderAttentionTable();
+    }
+
+    function updatePlanSummary(){
+      document.getElementById("planCommissionsCount").textContent = COMMISSIONS.length;
+      document.getElementById("planActionsCount").textContent = rawData.length;
+      document.getElementById("planAdvance").textContent = calculateOverallAdvance(rawData);
+    }
+
+    function updateKPIs(){
+      document.getElementById("kpiTotal").textContent = filteredData.length;
+      document.getElementById("kpiExecuted").textContent = countStatus(["terminado","ejecutado","ejecutada","finalizado","finalizada","culminado","culminada"]);
+      document.getElementById("kpiProgress").textContent = countStatus(["en implementacion","implementacion","en curso","curso","proceso","desarrollo","midiendo resultados"]);
+      document.getElementById("kpiExpired").textContent = getExpiredRows(filteredData).length;
+      document.getElementById("pendingDecisions").textContent = countPendingDecisions(filteredData);
+    }
+
+    function countStatus(keywords){
+      return filteredData.filter(row => {
+        const status = normalize(getField(row,"status"));
+        return keywords.some(keyword => status.includes(normalize(keyword)));
+      }).length;
+    }
+
+    function countPendingDecisions(data){
+      const byDecision = data.filter(row => normalize(getField(row,"decision")).includes("pendiente"));
+      if(byDecision.length) return byDecision.length;
+      return data.filter(row => normalize(getField(row,"status")).includes("pendiente")).length;
+    }
+
+    function calculateOverallAdvance(data){
+      if(!data.length) return 0;
+      const advances = data.map(row => parsePercent(getField(row,"advance"))).filter(value => !isNaN(value));
+      if(advances.length) return Math.round(advances.reduce((sum,value) => sum + value,0) / advances.length);
+
+      const done = data.filter(isExecuted).length;
+      return Math.round((done / data.length) * 100);
+    }
+
+    function parsePercent(value){
+      if(!value) return NaN;
+      const clean = String(value).replace("%","").replace(",",".").trim();
+      const number = Number(clean);
+      if(isNaN(number)) return NaN;
+      return number > 1 ? number : number * 100;
+    }
+
+    function updateDateCompliance(){
+      const total = filteredData.length;
+      let ok = 0, soon = 0, expired = 0;
+
+      filteredData.forEach(row => {
+        const endDate = parseDate(getField(row,"endDate"));
+        if(!endDate || isExecuted(row)){ok++;return}
+
+        const days = daysBetween(today,endDate);
+        if(days < 0) expired++;
+        else if(days <= 10) soon++;
+        else ok++;
+      });
+
+      const okPct = total ? Math.round((ok/total)*100) : 0;
+      const soonPct = total ? Math.round((soon/total)*100) : 0;
+      const expiredPct = total ? Math.round((expired/total)*100) : 0;
+
+      document.getElementById("dateOk").textContent = ok;
+      document.getElementById("dateSoon").textContent = soon;
+      document.getElementById("dateExpired").textContent = expired;
+      document.getElementById("dateOkPct").textContent = `(${okPct}%)`;
+      document.getElementById("dateSoonPct").textContent = `(${soonPct}%)`;
+      document.getElementById("dateExpiredPct").textContent = `(${expiredPct}%)`;
+      document.getElementById("barOk").style.width = `${okPct}%`;
+      document.getElementById("barSoon").style.width = `${soonPct}%`;
+      document.getElementById("barExpired").style.width = `${expiredPct}%`;
+      document.getElementById("dateTotal").textContent = total;
+    }
+
+    function updateCharts(){
+      if(!document.getElementById("view-dashboard").classList.contains("active")) return;
+      renderStatusChart();
+      renderCommissionChart();
+      renderAdvanceChart();
+    }
+
+    function renderStatusChart(){
+      const counts = groupCount(filteredData,"status");
+      const labels = Object.keys(counts);
+      const values = Object.values(counts);
+
+      createOrUpdateChart("statusChart","doughnut",{
+        labels,
+        datasets:[{
+          data:values,
+          backgroundColor:labels.map(getStatusColor),
+          borderColor:"#FFFFFF",
+          borderWidth:3,
+          hoverOffset:5
+        }]
+      },{
+        responsive:true,
+        maintainAspectRatio:false,
+        cutout:"64%",
+        plugins:{
+          legend:{
+            position:"right",
+            labels:{boxWidth:12,padding:16,color:"#66758A",font:{size:12}}
+          }
+        }
+      });
+    }
+
+    function renderCommissionChart(){
+      const sorted = Object.entries(groupCount(filteredData,"commission"))
+        .sort((a,b) => b[1] - a[1])
+        .slice(0,12);
+
+      createOrUpdateChart("commissionChart","bar",{
+        labels:sorted.map(item => item[0]),
+        datasets:[{
+          label:"Acciones",
+          data:sorted.map(item => item[1]),
+          backgroundColor:"#103A62",
+          borderRadius:8,
+          maxBarThickness:26
+        }]
+      },{
+        responsive:true,
+        maintainAspectRatio:false,
+        indexAxis:"y",
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{beginAtZero:true,grid:{color:"#EDF2F7"},ticks:{precision:0,color:"#66758A"}},
+          y:{grid:{display:false},ticks:{color:"#66758A",font:{size:11}}}
+        }
+      });
+    }
+
+    function renderAdvanceChart(){
+      const groups = {};
+      filteredData.forEach(row => {
+        const commission = getField(row,"commission") || "Sin comisión";
+        if(!groups[commission]) groups[commission] = [];
+        groups[commission].push(row);
+      });
+
+      const data = Object.entries(groups)
+        .map(([commission,rows]) => ({commission,advance:calculateOverallAdvance(rows)}))
+        .sort((a,b) => b.advance - a.advance)
+        .slice(0,12);
+
+      createOrUpdateChart("advanceChart","bar",{
+        labels:data.map(item => item.commission),
+        datasets:[{
+          label:"% avance",
+          data:data.map(item => item.advance),
+          backgroundColor:data.map(item => advanceColor(item.advance)),
+          borderRadius:8,
+          maxBarThickness:24
+        }]
+      },{
+        responsive:true,
+        maintainAspectRatio:false,
+        indexAxis:"y",
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:context => `${context.raw}%`}}
+        },
+        scales:{
+          x:{min:0,max:100,grid:{color:"#EDF2F7"},ticks:{color:"#66758A",callback:value => `${value}%`}},
+          y:{grid:{display:false},ticks:{color:"#66758A",font:{size:11}}}
+        }
+      });
+    }
+
+    function createOrUpdateChart(canvasId,type,data,options){
+      const canvas = document.getElementById(canvasId);
+      if(!canvas) return;
+      if(charts[canvasId]) charts[canvasId].destroy();
+      charts[canvasId] = new Chart(canvas,{type,data,options});
+    }
+
+    function groupCount(data,fieldType){
+      return data.reduce((acc,row) => {
+        const value = getField(row,fieldType) || "Sin dato";
+        acc[value] = (acc[value] || 0) + 1;
+        return acc;
+      },{});
+    }
+
+    function renderAttentionTable(){
+      const tbody = document.getElementById("attentionTable");
+      tbody.innerHTML = "";
+
+      const rows = filteredData.map(row => {
+        const endDate = parseDate(getField(row,"endDate"));
+        const done = isExecuted(row);
+        let alert = "", priority = 99;
+
+        if(endDate && !done){
+          const days = daysBetween(today,endDate);
+          if(days < 0){alert = "Vencida"; priority = 1}
+          else if(days <= 10){alert = "Próxima a vencer"; priority = 2}
+        }
+
+        return {row,alert,priority};
+      }).filter(item => item.alert).sort((a,b) => a.priority - b.priority).slice(0,12);
+
+      if(!rows.length){
+        tbody.innerHTML = `<tr><td colspan="6" class="empty">No hay acciones vencidas o próximas a vencer con los filtros actuales.</td></tr>`;
+        return;
+      }
+
+      rows.forEach(item => {
+        const row = item.row;
+        const status = getField(row,"status") || "Sin estado";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><strong>${escapeHTML(getField(row,"commission") || "-")}</strong></td>
+          <td>${escapeHTML(getField(row,"activity") || "-")}</td>
+          <td><span class="badge" style="background:${getStatusColor(status)}22;color:${readableStatusText(status)};border-color:${getStatusColor(status)}44">${escapeHTML(status)}</span></td>
+          <td class="muted">${escapeHTML(getField(row,"responsible") || "-")}</td>
+          <td>${escapeHTML(getField(row,"endDate") || "-")}</td>
+          <td><span class="alert-text ${item.alert === "Vencida" ? "alert-red" : "alert-orange"}">${item.alert}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderCommissionsDirectory(){
+      const box = document.getElementById("commissionsDirectory");
+      box.innerHTML = "";
+
+      COMMISSIONS.forEach(item => {
+        const article = document.createElement("article");
+        article.className = "commission-card";
+        article.innerHTML = `
+          <div class="commission-head">
+            <div>
+              <h3>${escapeHTML(item.name)}</h3>
+              <p>${escapeHTML(item.leader)}</p>
+            </div>
+            <div class="commission-id">${item.id}</div>
+          </div>
+          <button class="backlog-link" onclick="filterByCommission('${item.id}')">Ver backlog ${item.id}</button>
+        `;
+        box.appendChild(article);
+      });
+    }
+
+    function filterByCommission(id){
+      showView("dashboard");
+      setTimeout(() => {
+        const select = document.getElementById("filterCommission");
+        const option = [...select.options].find(opt => {
+          const value = normalize(opt.value);
+          return value === normalize(id) || value.includes(normalize(id));
+        });
+
+        if(option){
+          select.value = option.value;
+          applyFilters();
+        }else{
+          showStatus(`No se encontró la comisión ${id} en el CSV. Revisa que el campo de comisión use C1, C2, C3, etc.`);
+        }
+      },120);
+    }
+
+    function parseDate(value){
+      if(!value) return null;
+      const clean = String(value).trim();
+
+      if(/^\d{4}-\d{2}-\d{2}$/.test(clean)) return new Date(clean + "T00:00:00");
+
+      const parts = clean.split(/[\/\-\.]/);
+      if(parts.length === 3){
+        let day = Number(parts[0]);
+        let month = Number(parts[1]) - 1;
+        let year = Number(parts[2]);
+        if(year < 100) year += 2000;
+        if(!isNaN(day) && !isNaN(month) && !isNaN(year)) return new Date(year,month,day);
+      }
+
+      const parsed = new Date(clean);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatDate(date){
+      const day = String(date.getDate()).padStart(2,"0");
+      const month = String(date.getMonth()+1).padStart(2,"0");
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+
+    function daysBetween(start,end){
+      const oneDay = 1000*60*60*24;
+      const startDate = new Date(start.getFullYear(),start.getMonth(),start.getDate());
+      const endDate = new Date(end.getFullYear(),end.getMonth(),end.getDate());
+      return Math.ceil((endDate - startDate) / oneDay);
+    }
+
+    function getExpiredRows(data){
+      return data.filter(row => {
+        const endDate = parseDate(getField(row,"endDate"));
+        return endDate && !isExecuted(row) && daysBetween(today,endDate) < 0;
+      });
+    }
+
+    function isExecuted(row){
+      const status = normalize(getField(row,"status"));
+      return status.includes("terminado") ||
+             status.includes("ejecutado") ||
+             status.includes("finalizado") ||
+             status.includes("culminado");
+    }
+
+    function getStatusColor(status){
+      const s = normalize(status);
+      if(s.includes("por hacer") || s.includes("pendiente")) return "#D9DDE3";
+      if(s.includes("descubrimiento")) return "#9CA3AF";
+      if(s.includes("listo para implementar") || s.includes("programado")) return "#FBBF24";
+      if(s.includes("en implementacion") || s.includes("en curso") || s.includes("proceso") || s.includes("desarrollo")) return "#2F9BE8";
+      if(s.includes("midiendo resultados")) return "#159A9C";
+      if(s.includes("terminado") || s.includes("ejecutado") || s.includes("finalizado") || s.includes("culminado")) return "#55B83B";
+      if(s.includes("despriorizado") || s.includes("detenido") || s.includes("paralizado")) return "#EF4444";
+      return "#94A3B8";
+    }
+
+    function readableStatusText(status){
+      const color = getStatusColor(status);
+      if(["#D9DDE3","#FBBF24"].includes(color)) return "#132238";
+      return color;
+    }
+
+    function advanceColor(value){
+      if(value >= 80) return "#55B83B";
+      if(value >= 60) return "#159A9C";
+      if(value >= 35) return "#2F9BE8";
+      if(value >= 15) return "#FBBF24";
+      return "#9CA3AF";
+    }
+
+    function showStatus(message){
+      const box = document.getElementById("statusMessage");
+      box.textContent = message;
+      box.style.display = "block";
+    }
+
+    function hideStatus(){
+      const box = document.getElementById("statusMessage");
+      box.textContent = "";
+      box.style.display = "none";
+    }
+
+    function escapeHTML(value){
+      return String(value || "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+  </script>
+</body>
+</html>
